@@ -18,7 +18,6 @@ type Putaran = {
   minggu: number
   warna_target: string
   objek: string[]
-  distractor_warna: string[]
 }
 
 type ContentVariant = {
@@ -32,12 +31,6 @@ type MechanicLevel = {
   config: { pilihan: number; timer: boolean | string; distractor: boolean }
 }
 
-// ----------------------------------------------------------------------
-// Palet warna anak -> nilai hex aktual. SENGAJA terpisah dari ColorPalette
-// sekolah (konten pembelajaran harus akurat secara perseptual, bukan
-// estetika brand). Identik dengan GameDuniaWarnaTapTarget untuk konsistensi
-// visual antar tingkat.
-// ----------------------------------------------------------------------
 const WARNA_HEX: Record<string, string> = {
   merah: '#E5484D',
   kuning: '#F5D90A',
@@ -64,27 +57,9 @@ const WARNA_UCAPAN: Record<string, string> = {
   hitam_putih: 'hitam, atau putih',
 }
 
-const BENTUK_OBJEK: Record<
-  string,
-  'bulat' | 'lonjong' | 'katak' | 'kadal' | 'rubah' | 'kucing' | 'kelinci' | 'gajah'
-> = {
-  apel: 'bulat',
-  stroberi: 'lonjong',
-  mangga: 'lonjong',
-  pisang: 'lonjong',
-  alpukat: 'lonjong',
-  jambu_biji: 'bulat',
-  katak: 'katak',
-  kadal_hijau: 'kadal',
-  rubah: 'rubah',
-  kucing_oranye: 'kucing',
-  mainan_kelinci_ungu: 'kelinci',
-  mainan_gajah_ungu: 'gajah',
-}
-
 function ObjekBuah({
   nama,
-  hex,
+  hex: _hex,
   size,
   state,
   bonus,
@@ -97,12 +72,10 @@ function ObjekBuah({
   bonus?: boolean
   onTap: () => void
 }) {
-  const bentukKey = nama.split('__distractor_')[0]
-  const bentuk = BENTUK_OBJEK[bentukKey] ?? 'bulat'
   return (
     <button
       onClick={onTap}
-      aria-label={bentukKey.replace(/_/g, ' ')}
+      aria-label={nama.split('__distractor_')[0].replace(/_/g, ' ')}
       className={[
         'relative flex items-center justify-center transition-transform duration-300',
         state === 'idle' ? (bonus ? 'tap-buah-bonus' : 'tap-buah-idle') : '',
@@ -111,97 +84,17 @@ function ObjekBuah({
       ].join(' ')}
       style={{ width: size, height: size, minWidth: 80, minHeight: 80 }}
     >
-      <svg viewBox="0 0 100 100" width={size} height={size}>
-        {bentuk === 'bulat' && <circle cx="50" cy="55" r="38" fill={hex} />}
-        {bentuk === 'lonjong' && <ellipse cx="50" cy="55" rx="30" ry="40" fill={hex} />}
-
-        {bentuk === 'katak' && (
-          <>
-            <ellipse cx="50" cy="62" rx="36" ry="26" fill={hex} />
-            <circle cx="36" cy="38" r="9" fill={hex} />
-            <circle cx="64" cy="38" r="9" fill={hex} />
-            <circle cx="36" cy="36" r="3.5" fill="#222" />
-            <circle cx="64" cy="36" r="3.5" fill="#222" />
-          </>
-        )}
-
-        {bentuk === 'kadal' && (
-          <>
-            <ellipse cx="46" cy="58" rx="28" ry="18" fill={hex} />
-            <polygon points="74,58 96,48 96,68" fill={hex} />
-            <circle cx="26" cy="52" r="4" fill="#222" />
-          </>
-        )}
-
-        {bentuk === 'rubah' && (
-          <>
-            <polygon points="30,30 42,8 50,32" fill={hex} />
-            <polygon points="70,30 58,8 50,32" fill={hex} />
-            <circle cx="50" cy="58" r="32" fill={hex} />
-            <ellipse cx="50" cy="68" rx="10" ry="7" fill="white" opacity={0.7} />
-          </>
-        )}
-
-        {bentuk === 'kucing' && (
-          <>
-            <polygon points="26,28 40,10 46,30" fill={hex} />
-            <polygon points="74,28 60,10 54,30" fill={hex} />
-            <circle cx="50" cy="58" r="32" fill={hex} />
-            <line x1="24" y1="60" x2="6" y2="56" stroke="#5a5a5a" strokeWidth="2" />
-            <line x1="24" y1="66" x2="6" y2="66" stroke="#5a5a5a" strokeWidth="2" />
-            <line x1="76" y1="60" x2="94" y2="56" stroke="#5a5a5a" strokeWidth="2" />
-            <line x1="76" y1="66" x2="94" y2="66" stroke="#5a5a5a" strokeWidth="2" />
-          </>
-        )}
-
-        {bentuk === 'kelinci' && (
-          <>
-            <ellipse cx="38" cy="20" rx="8" ry="22" fill={hex} />
-            <ellipse cx="62" cy="20" rx="8" ry="22" fill={hex} />
-            <circle cx="50" cy="58" r="30" fill={hex} />
-          </>
-        )}
-
-        {bentuk === 'gajah' && (
-          <>
-            <circle cx="24" cy="46" r="20" fill={hex} opacity={0.85} />
-            <circle cx="76" cy="46" r="20" fill={hex} opacity={0.85} />
-            <circle cx="50" cy="55" r="32" fill={hex} />
-            <path
-              d="M50 80 Q46 95 54 96"
-              stroke={hex}
-              strokeWidth="9"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </>
-        )}
-
-        {(bentuk === 'bulat' || bentuk === 'lonjong') && (
-          <>
-            <path
-              d="M50 17 Q56 8 64 12"
-              stroke="#5B7B3A"
-              strokeWidth="5"
-              strokeLinecap="round"
-              fill="none"
-            />
-            <ellipse cx="62" cy="14" rx="10" ry="6" fill="#6FA84A" transform="rotate(-25 62 14)" />
-          </>
-        )}
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={`/images/objek/${nama}.png`}
+        alt={nama}
+        draggable={false}
+        style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
+      />
     </button>
   )
 }
 
-// ----------------------------------------------------------------------
-// Timer visual MURNI DEKORATIF — lingkaran mengecil perlahan. SENGAJA
-// tidak ada konsekuensi apa pun saat habis (tidak mensalahkan, tidak
-// menghentikan, tidak mengganti soal otomatis). Sesuai keputusan: PRD
-// menyebut 'soft timer', bukan timer keras. Anak tetap bisa menjawab
-// kapan saja, bahkan setelah lingkaran habis - timer ini murni memberi
-// nuansa permainan, bukan tekanan waktu sungguhan.
-// ----------------------------------------------------------------------
 function TimerVisual({ color, resetKey }: { color: string; resetKey: string | number }) {
   const DURASI_DETIK = 6
   const [progress, setProgress] = useState(1)
@@ -216,7 +109,6 @@ function TimerVisual({ color, resetKey }: { color: string; resetKey: string | nu
       if (sisa <= 0) clearInterval(interval)
     }, 100)
     return () => clearInterval(interval)
-    // resetKey berubah setiap putaran/objek baru -> timer otomatis restart
   }, [resetKey])
 
   const radius = 16
@@ -249,8 +141,6 @@ type RiwayatWarna = {
   played_at: string
 }
 
-// Identik dengan logika di GameDuniaWarnaTapTarget - lihat komentar riset
-// lengkap di file tersebut dan di dokumen basis-riset-dunia-warna.md.
 function pilihPutaranBerbobot(putaranList: Putaran[], riwayat: RiwayatWarna[]): Putaran | null {
   if (putaranList.length === 0) return null
   if (putaranList.length === 1) return putaranList[0]
@@ -280,8 +170,6 @@ function pilihPutaranBerbobot(putaranList: Putaran[], riwayat: RiwayatWarna[]): 
   return putaranList[putaranList.length - 1]
 }
 
-// Identik dengan helper di tingkat 1 - lihat komentar lengkap soal
-// dampak teknis & pedagogis di GameDuniaWarnaTapTarget.tsx.
 function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   const hari = new Date().getDay()
   if (hari === 0 || hari === 6) return 'weekend'
@@ -301,8 +189,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // TARGET_REPETISI diturunkan ke 3 - lihat komentar lengkap di
-  // GameDuniaWarnaTapTarget.tsx untuk basis keputusan ini.
   const TARGET_REPETISI = 3
   const [repetisiKe, setRepetisiKe] = useState(1)
   const [riwayatWarnaSesi, setRiwayatWarnaSesi] = useState<RiwayatWarna[]>([])
@@ -311,20 +197,11 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
   const [bonusIndex, setBonusIndex] = useState(0)
   const BONUS_TOTAL = 3
 
-  // Untuk logging karakter (repetisi_log), identik dengan tingkat 1.
   const jumlahSalahRef = useRef(0)
   const repetisiStartRef = useRef<number>(Date.now())
-
-  // Flag supaya greeting nama anak HANYA diucapkan sekali di awal sesi,
-  // identik pola tingkat 1.
   const sudahGreetingRef = useRef(false)
-
   const sessionStartRef = useRef<number>(Date.now())
 
-  // ------------------------------------------------------------------
-  // 1. Tentukan minggu anak, ambil mechanic_level 'tap_distractor',
-  //    tema yang sesuai, dan content_variant-nya.
-  // ------------------------------------------------------------------
   useEffect(() => {
     let isMounted = true
 
@@ -363,6 +240,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
         .from('game_themes')
         .select('id, week_range')
         .eq('game_key', 'dunia_warna')
+        .order('sort_order', { ascending: true })
 
       if (themesErr || !themesData) {
         if (isMounted) setError('Gagal memuat tema permainan.')
@@ -370,7 +248,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
       }
 
       const matchedTheme = themesData.find((t: { week_range: number[] }) =>
-        t.week_range.includes(currentWeek)
+        Array.isArray(t.week_range) && t.week_range.map(Number).includes(currentWeek)
       )
       const themeId = matchedTheme?.id ?? themesData[0]?.id
 
@@ -379,7 +257,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
         .select('warna_key, correct_items, total_items, played_at')
         .eq('child_id', childId)
         .eq('game_key', 'dunia_warna')
-        .not('warna_key', 'is', null) // kecualikan sesi "penanda pembuka minggu" (BUG FIX)
+        .not('warna_key', 'is', null)
         .order('played_at', { ascending: false })
         .limit(20)
 
@@ -423,56 +301,30 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
   }, [childId])
 
   // ------------------------------------------------------------------
-  // 2. Bangun daftar objek tampil: 1 target + N distractor warna lain.
-  //    KEPUTUSAN: objek distractor diambil via LOOKUP SILANG ke putaran
-  //    lain dalam putaranTersedia yang warna_target-nya cocok dengan
-  //    salah satu distractor_warna milik putaran aktif. Ini menjaga
-  //    konsistensi visual (distractor "kuning" memakai mangga/pisang
-  //    yang SAMA dipakai saat kuning jadi target di putaran lain),
-  //    bukan bentuk generik tak bermakna.
-  // ------------------------------------------------------------------
+  // Bangun daftar objek tampil:
+  // Senin (tap_target): distractor = objek SAMA versi abu (pisang vs pisang_abu)
+  // Rabu (tap_distractor): distractor = objek RANDOM LAIN versi abu (pisang vs apel_abu)
+  // Kesulitan meningkat karena anak tidak bisa andalkan bentuk, harus fokus warna murni.
   const objekTampil = (() => {
     if (!putaran) return []
     const indexAktif = faseBonus ? bonusIndex : objekIndex
     const namaTarget = putaran.objek[indexAktif % putaran.objek.length]
-
-    const distractorItems = putaran.distractor_warna.map((warnaDistractor) => {
-      const putaranSumber = putaranTersedia.find((p) => p.warna_target === warnaDistractor)
-      const objekSumber = putaranSumber?.objek ?? []
-      const namaObjek =
-        objekSumber.length > 0
-          ? objekSumber[indexAktif % objekSumber.length]
-          : // Fallback kalau tidak ditemukan putaran sumber untuk warna ini,
-            // atau putaran sumber ditemukan tapi objek-nya kosong (mis. data
-            // asset_config belum lengkap) - pakai bentuk generik supaya game
-            // tetap berjalan, bukan crash atau biarkan benda tanpa nama.
-            `bentuk_${warnaDistractor}`
-      return {
-        nama: `${namaObjek}__distractor_${warnaDistractor}`,
-        hex: WARNA_HEX[warnaDistractor] ?? '#C9C7BE',
-        isTarget: false,
-      }
-    })
-
+    const poolDistractor = putaran.objek.filter((o) => o !== namaTarget)
+    const namaDistractor = poolDistractor.length > 0
+      ? poolDistractor[Math.floor(Math.random() * poolDistractor.length)]
+      : putaran.objek[0]
     return [
       { nama: namaTarget, hex: WARNA_HEX[putaran.warna_target], isTarget: true },
-      ...distractorItems,
+      { nama: `${namaDistractor}_abu`, hex: '#C9C7BE', isTarget: false },
     ]
   })()
 
-  // Acak urutan tampil sekali per objek/repetisi (bukan re-shuffle tiap
-  // render, yang akan membuat posisi "lompat" saat re-render terjadi
-  // karena state lain berubah, mis. tapState). Target tidak selalu di
-  // posisi pertama supaya anak belajar warnanya, bukan posisinya.
   const [urutanTampil, setUrutanTampil] = useState<typeof objekTampil>([])
   useEffect(() => {
     setUrutanTampil([...objekTampil].sort(() => Math.random() - 0.5))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [putaran, objekIndex, bonusIndex, faseBonus])
 
-  // ------------------------------------------------------------------
-  // 3. Audio cue — identik dengan tingkat 1, lihat komentar di sana.
-  // ------------------------------------------------------------------
   const ucapkan = useCallback((teks: string) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return
     window.speechSynthesis.cancel()
@@ -499,7 +351,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     [ucapkan]
   )
 
-  // Dorongan semangat antar-repetisi - identik pola tingkat 1.
   const FRASA_ENCOURAGEMENT = [
     'Bagus sekali! Ayo lanjut lagi.',
     'Hebat! Satu lagi ya.',
@@ -515,7 +366,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     [ucapkan]
   )
 
-  // Logging karakter anak - identik pola tingkat 1, level-key disesuaikan.
   const simpanRepetisiLog = useCallback(
     async (repetisiKeSelesai: number, targetValue: string, jumlahSalah: number, diselesaikan: boolean) => {
       const durasiMs = Date.now() - repetisiStartRef.current
@@ -533,8 +383,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     [childId]
   )
 
-  // Greeting nama anak di awal sesi, sebelum instruksi pertama - identik
-  // pola tingkat 1.
   useEffect(() => {
     if (!putaran) return
     const isAwalSesi = repetisiKe === 1 && objekIndex === 0 && !faseBonus
@@ -561,9 +409,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     return () => clearTimeout(timeout)
   }, [putaran, objekIndex, faseBonus, bonusIndex, repetisiKe, childName, ucapkan, playInstruksiAwal])
 
-  // ------------------------------------------------------------------
-  // 4. Handle tap — sama persis prinsip zero-punishment tingkat 1.
-  // ------------------------------------------------------------------
   async function handleTap(nama: string, isTarget: boolean) {
     if (faseBonus) return handleTapBonus(nama, isTarget)
     if (!putaran) return
@@ -618,9 +463,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
         }
       }, 700)
     } else {
-      // Zero punishment + scaffolded feedback (ulang instruksi), sama
-      // seperti tingkat 1. TIDAK ada emoji/wajah sedih - lihat dokumen
-      // riset poin 8.
       jumlahSalahRef.current += 1
       setTapState((s) => ({ ...s, [nama]: 'wrong' }))
       if (putaran) playInstruksiAwal(putaran.warna_target)
@@ -640,7 +482,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
           onSessionComplete?.({
             correctItems: correctCount,
             totalItems: putaran?.objek.length ?? 0,
-            levelTerbuka: true, // menandai tingkat 3 (belum dibangun) sebagai target berikutnya
+            levelTerbuka: true,
           })
         } else {
           setBonusIndex((i) => i + 1)
@@ -659,7 +501,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
   async function simpanSesiNormal(finalCorrectCount: number, putaranSesi: Putaran) {
     if (!variant) return
     const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000)
-
     await supabase.from('game_sessions').insert({
       child_id: childId,
       game_key: 'dunia_warna',
@@ -674,15 +515,9 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     })
   }
 
-  // ------------------------------------------------------------------
-  // Render
-  // ------------------------------------------------------------------
   if (loading) {
     return (
-      <div
-        style={{ backgroundColor: colors.background }}
-        className="min-h-[480px] flex items-center justify-center"
-      >
+      <div style={{ backgroundColor: colors.background }} className="min-h-[480px] flex items-center justify-center">
         <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
       </div>
     )
@@ -690,10 +525,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
 
   if (error) {
     return (
-      <div
-        style={{ backgroundColor: colors.background, color: colors.text }}
-        className="min-h-[480px] flex items-center justify-center text-center px-6"
-      >
+      <div style={{ backgroundColor: colors.background, color: colors.text }} className="min-h-[480px] flex items-center justify-center text-center px-6">
         <p className="text-sm opacity-70">{error}</p>
       </div>
     )
@@ -741,8 +573,6 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
         />
       )}
 
-      {/* Timer visual: murni dekoratif, tanpa konsekuensi. Tidak muncul
-          di fase bonus (tempo sudah cepat secara alami di sana). */}
       {!faseBonus && putaran && (
         <div className="absolute top-4 right-4">
           <TimerVisual color={colors.accent} resetKey={`${repetisiKe}-${objekIndex}`} />
@@ -765,18 +595,13 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
 
       <div className="flex flex-col items-center gap-3">
         <div className="flex gap-2" aria-hidden="true">
-          {(faseBonus
-            ? Array.from({ length: BONUS_TOTAL })
-            : putaran?.objek ?? []
-          ).map((_, i) => (
+          {(faseBonus ? Array.from({ length: BONUS_TOTAL }) : putaran?.objek ?? []).map((_, i) => (
             <span
               key={i}
               style={{
                 backgroundColor:
                   i <= (faseBonus ? bonusIndex : objekIndex)
-                    ? faseBonus
-                      ? colors.accent
-                      : colors.primary
+                    ? faseBonus ? colors.accent : colors.primary
                     : colors.secondary,
               }}
               className="w-3 h-3 rounded-full transition-colors"
