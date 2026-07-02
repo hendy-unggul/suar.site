@@ -33,16 +33,16 @@ type MechanicLevel = {
 }
 
 const WARNA_HEX: Record<string, string> = {
-  merah: '#E5484D',
-  kuning: '#F5D90A',
-  hijau: '#46A758',
-  biru: '#0091FF',
-  oranye: '#F76B15',
-  ungu: '#8E4EC6',
-  coklat: '#9A6735',
-  merah_jambu: '#E93D82',
+  merah: '#E8001C',
+  kuning: '#FFD700',
+  hijau: '#00B300',
+  biru: '#0057FF',
+  oranye: '#FF6000',
+  ungu: '#7B00FF',
+  coklat: '#8B4513',
+  merah_jambu: '#FF1493',
   abu: '#8B8D98',
-  hitam_putih: '#1C1C1F',
+  hitam_putih: '#111111',
 }
 
 const WARNA_UCAPAN: Record<string, string> = {
