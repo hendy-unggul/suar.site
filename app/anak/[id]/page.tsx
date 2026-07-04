@@ -9,6 +9,7 @@ import { colorPalettes } from '@/config/colorPalettes'
 type ChildWithSchool = {
   id: string
   name: string
+  photo_url: string | null
   classes: {
     schools: {
       color_palette: string
@@ -25,12 +26,42 @@ type DashboardStatus = {
   tantangan: HariStatus
 }
 
-// Ikon tiap hari — visual tanpa teks untuk anak
-const HARI_ICON: Record<string, string> = {
-  senin: '🎯',
-  rabu: '🎨',
-  jumat: '🧺',
-  tantangan: '⭐',
+// Warna tombol tiap hari — konsisten dengan warna yang dipelajari anak di game
+const HARI_WARNA: Record<string, string> = {
+  senin: '#E8001C',
+  rabu: '#FFD700',
+  jumat: '#0057FF',
+  tantangan: '#00B300',
+}
+
+// Foto objek familiar per hari — diambil dari bank gambar yang sudah dikenal anak
+const HARI_FOTO: Record<string, string> = {
+  senin: '/images/objek/apel.png',
+  rabu: '/images/objek/pisang.png',
+  jumat: '/images/objek/balon_biru.png',
+  tantangan: '/images/objek/katak.png',
+}
+
+// Warna teks per hari (kuning butuh teks gelap supaya kontras)
+const HARI_TEKS_WARNA: Record<string, string> = {
+  senin: '#ffffff',
+  rabu: '#5a4200',
+  jumat: '#ffffff',
+  tantangan: '#ffffff',
+}
+
+const HARI_LABEL: Record<string, string> = {
+  senin: 'Senin',
+  rabu: 'Rabu',
+  jumat: 'Jumat',
+  tantangan: 'Tantangan',
+}
+
+const HARI_DESKRIPSI: Record<string, string> = {
+  senin: 'Kenali warna',
+  rabu: 'Bedakan warna',
+  jumat: 'Sortir warna',
+  tantangan: 'Semua warna',
 }
 
 const HARI_LABEL_AUDIO: Record<string, string> = {
@@ -114,7 +145,7 @@ export default function DashboardAnak() {
       // Ambil data anak
       const { data: childData } = await supabase
         .from('children')
-        .select('id, name, classes(schools(color_palette))')
+        .select('id, name, photo_url, classes(schools(color_palette))')
         .eq('id', childId)
         .single()
 
@@ -267,12 +298,21 @@ export default function DashboardAnak() {
       {/* Header: nama anak + toggle info ortu */}
       <div className="flex items-center justify-between px-6 pt-8 pb-2">
         <div className="flex items-center gap-3">
-          {/* Avatar lingkaran warna */}
+          {/* Avatar: foto anak kalau ada, inisial sebagai fallback */}
           <div
             style={{ backgroundColor: colors.primary }}
-            className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xl font-bold"
+            className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-white text-xl font-bold"
           >
-            {child.name.charAt(0).toUpperCase()}
+            {child.photo_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={child.photo_url}
+                alt={child.name}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <span>{child.name.charAt(0).toUpperCase()}</span>
+            )}
           </div>
           <span
             style={{ color: colors.text, fontSize: 20, fontWeight: 700 }}
@@ -324,66 +364,84 @@ export default function DashboardAnak() {
         ))}
       </div>
 
-      {/* Grid tombol hari */}
-      <div className="flex-1 grid grid-cols-2 gap-4 px-6 pb-6">
+      {/* Tombol hari — satu kolom vertikal, urutan atas ke bawah */}
+      <div className="flex flex-col gap-3 px-4 pb-6">
         {URUTAN_HARI.map((hari) => {
           const s = status[hari as keyof DashboardStatus]
           const terbuka = s !== 'terkunci'
           const selesai = s === 'selesai'
+          const warnaTombol = HARI_WARNA[hari]
+          const warnaTeks = HARI_TEKS_WARNA[hari]
 
           return (
             <button
               key={hari}
               onClick={() => handleTapHari(hari)}
               style={{
-                backgroundColor: selesai
-                  ? colors.secondary
-                  : terbuka
-                    ? colors.primary
-                    : colors.secondary,
+                backgroundColor: warnaTombol,
                 opacity: terbuka ? 1 : 0.4,
-                border: selesai ? `3px solid ${colors.accent}` : 'none',
+                minHeight: 80,
               }}
-              className="relative rounded-3xl flex flex-col items-center justify-center gap-3 py-8 transition-transform active:scale-95"
+              className="relative w-full rounded-2xl flex items-center gap-4 px-5 py-4 transition-transform active:scale-95"
             >
-              {/* Ikon hari */}
-              <span style={{ fontSize: 52 }}>{HARI_ICON[hari]}</span>
+              {/* Foto objek familiar */}
+              <div
+                style={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
+                className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={HARI_FOTO[hari]}
+                  alt={HARI_LABEL[hari]}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    objectFit: 'contain',
+                    filter: terbuka ? 'none' : 'grayscale(1)',
+                  }}
+                />
+              </div>
 
-              {/* Label audio saja — tidak ada teks tertulis untuk anak */}
-              {/* Tapi untuk aksesibilitas screen reader tetap ada */}
-              <span className="sr-only">{HARI_LABEL_AUDIO[hari]}</span>
+              {/* Label + deskripsi */}
+              <div className="flex flex-col items-start flex-1">
+                <span style={{ color: `${warnaTeks}99`, fontSize: 12, marginBottom: 2 }}>
+                  {HARI_LABEL[hari]}
+                </span>
+                <span style={{ color: warnaTeks, fontSize: 17, fontWeight: 600 }}>
+                  {HARI_DESKRIPSI[hari]}
+                </span>
+              </div>
 
-              {/* Gembok jika terkunci */}
-              {!terbuka && (
-                <div className="absolute top-3 right-3">
-                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
-                    <rect x="5" y="11" width="14" height="9" rx="2"
-                      stroke={colors.text} strokeWidth="2" strokeOpacity={0.5} />
-                    <path d="M8 11V7a4 4 0 0 1 8 0v4"
-                      stroke={colors.text} strokeWidth="2" strokeLinecap="round"
-                      fill="none" strokeOpacity={0.5} />
-                  </svg>
-                </div>
-              )}
-
-              {/* Centang jika selesai */}
-              {selesai && (
+              {/* Status: centang / gembok / panah */}
+              {selesai ? (
                 <div
-                  style={{ backgroundColor: colors.accent }}
-                  className="absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.9)' }}
+                  className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                 >
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none">
-                    <path d="M5 13l4 4L19 7" stroke="white" strokeWidth="2.5"
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none">
+                    <path d="M5 13l4 4L19 7" stroke={warnaTombol} strokeWidth="2.5"
                       strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
+              ) : !terbuka ? (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" className="flex-shrink-0">
+                  <rect x="5" y="11" width="14" height="9" rx="2"
+                    stroke="rgba(255,255,255,0.8)" strokeWidth="2" />
+                  <path d="M8 11V7a4 4 0 0 1 8 0v4"
+                    stroke="rgba(255,255,255,0.8)" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" className="flex-shrink-0">
+                  <path d="M9 18l6-6-6-6"
+                    stroke="rgba(255,255,255,0.8)" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
               )}
 
-              {/* Animasi pulse untuk hari yang terbuka dan belum selesai */}
+              {/* Pulse border untuk hari aktif yang belum selesai */}
               {terbuka && !selesai && (
                 <div
-                  style={{ borderColor: colors.accent }}
-                  className="absolute inset-0 rounded-3xl border-2 animate-pulse pointer-events-none"
+                  style={{ borderColor: 'rgba(255,255,255,0.6)' }}
+                  className="absolute inset-0 rounded-2xl border-2 animate-pulse pointer-events-none"
                 />
               )}
             </button>
