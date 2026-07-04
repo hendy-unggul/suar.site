@@ -137,7 +137,7 @@ export default function DashboardAnak() {
 
       if (!isMounted) return
 
-      const sessionList = (sessions ?? []) as Array<{
+      const sessionList = (sessions ?? []) as unknown as Array<{
         played_at: string
         week_number: number
         game_content_variants: { game_mechanic_levels: { level_key: string } } | null
