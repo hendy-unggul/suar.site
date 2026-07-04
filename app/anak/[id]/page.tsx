@@ -475,7 +475,8 @@ export default function DashboardAnak() {
                 className="rounded-2xl p-4 space-y-2"
               >
                 <div className="flex items-center gap-2">
-                  <span style={{ fontSize: 20 }}>{HARI_ICON[hari]}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={HARI_FOTO[hari]} alt={HARI_LABEL[hari]} style={{ width: 24, height: 24, objectFit: 'contain' }} />
                   <span style={{ color: colors.text, fontWeight: 600, fontSize: 14 }}>
                     {info.judul}
                   </span>
