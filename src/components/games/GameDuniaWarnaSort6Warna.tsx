@@ -392,7 +392,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
         <BendaMengambang nama={objekBendaAktif} minggu={putaran?.minggu ?? 1} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={80} />
       </div>
 
-      <div className="grid grid-cols-3 gap-3 md:gap-4 w-full max-w-sm">
+      <div className={`grid gap-3 md:gap-4 w-full max-w-sm ${urutanKeranjang.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
         {urutanKeranjang.map((k) => (
           <div key={k.warna} className="flex items-center justify-center">
             <KeranjangGrid warna={k.warna} hex={k.hex} size={82} state={keranjangState[k.warna] ?? 'idle'} onTap={() => handleTapKeranjang(k.warna)} />
