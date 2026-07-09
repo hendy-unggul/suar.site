@@ -1,6 +1,7 @@
 // FILE PATH: src/components/games/GameDuniaWarnaFreeplay.tsx
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getObjekPath } from '@/lib/objekPath'
 import { ColorPalette } from '@/config/colorPalettes'
 
 type Props = {
@@ -37,12 +38,14 @@ const WARNA_UCAPAN: Record<string, string> = {
 
 function ObjekBuah({
   nama,
+  minggu,
   size,
   state,
   onTap,
 }: {
   nama: string
   hex: string
+  minggu: number
   size: number
   state: 'idle' | 'wrong' | 'correct'
   onTap: () => void
@@ -62,7 +65,7 @@ function ObjekBuah({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/images/objek/${namaFile}.png`}
+        src={getObjekPath(namaFile, minggu)}
         alt={namaFile}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
@@ -74,6 +77,8 @@ function ObjekBuah({
 export default function GameDuniaWarnaFreeplay({ childId, childName, colors }: Props) {
   const [warnaDikenal, setWarnaDikenal] = useState<string[]>([])
   const [objekPerWarna, setObjekPerWarna] = useState<Record<string, string[]>>({})
+  // Track minggu per objek supaya getObjekPath bisa resolve path yang benar
+  const [mingguPerObjek, setMingguPerObjek] = useState<Record<string, number>>({})
   const [warnaAktif, setWarnaAktif] = useState<string | null>(null)
   const [objekAktif, setObjekAktif] = useState<string>('apel')
   const [warnaDistractor, setWarnaDistractor] = useState<string | null>(null)
@@ -120,7 +125,7 @@ export default function GameDuniaWarnaFreeplay({ childId, childName, colors }: P
 
       const mapObjek: Record<string, Set<string>> = {}
       for (const v of variants) {
-        const putaranList = (v.asset_config?.putaran ?? []) as Array<{ warna_target?: string; objek?: string[] }>
+        const putaranList = (v.asset_config?.putaran ?? []) as Array<{ minggu?: number; warna_target?: string; objek?: string[] }>
         for (const p of putaranList) {
           if (!p.warna_target || !p.objek) continue
           if (!mapObjek[p.warna_target]) mapObjek[p.warna_target] = new Set()
@@ -131,9 +136,21 @@ export default function GameDuniaWarnaFreeplay({ childId, childName, colors }: P
       const objekFinal: Record<string, string[]> = {}
       warnaUnik.forEach((w) => { objekFinal[w] = Array.from(mapObjek[w] ?? []) })
 
+      // Build mingguPerObjek: nama objek → minggu asalnya
+      // Dipakai getObjekPath untuk resolve path /bulan{N}/minggu{N}/
+      const mingguMap: Record<string, number> = {}
+      for (const v of variants) {
+        const pl = (v.asset_config?.putaran ?? []) as Array<{ minggu?: number; objek?: string[] }>
+        for (const p of pl) {
+          if (!p.objek || !p.minggu) continue
+          p.objek.forEach((o) => { mingguMap[o] = p.minggu! })
+        }
+      }
+
       if (!isMounted) return
       setWarnaDikenal(warnaUnik)
       setObjekPerWarna(objekFinal)
+      setMingguPerObjek(mingguMap)
       pilihAcakBaru(warnaUnik, objekFinal)
       setLoading(false)
     }
@@ -248,6 +265,7 @@ export default function GameDuniaWarnaFreeplay({ childId, childName, colors }: P
             key={o.nama}
             nama={o.nama}
             hex={o.hex}
+            minggu={mingguPerObjek[o.nama.split('__')[0]] ?? 1}
             size={130}
             state={tapState[o.nama] ?? 'idle'}
             onTap={() => handleTap(o.nama, o.isTarget)}

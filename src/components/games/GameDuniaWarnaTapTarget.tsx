@@ -1,6 +1,7 @@
 // FILE PATH: src/components/games/GameDuniaWarnaTapTarget.tsx
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getObjekPath } from '@/lib/objekPath'
 import { ColorPalette } from '@/config/colorPalettes'
 
 type Props = {
@@ -59,8 +60,9 @@ const WARNA_UCAPAN: Record<string, string> = {
 }
 
 function ObjekBuah({
-  nama,
-  hex,
+ nama,
+  hex: _hex,
+  minggu,
   size,
   state,
   bonus,
@@ -69,6 +71,7 @@ function ObjekBuah({
   nama: string
   hex: string
   size: number
+  minggu?: number
   state: 'idle' | 'wrong' | 'correct'
   bonus?: boolean
   onTap: () => void
@@ -87,7 +90,7 @@ function ObjekBuah({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/images/objek/${nama}.png`}
+        src={getObjekPath(nama, minggu ?? 1)}
         alt={nama}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
@@ -545,6 +548,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
             key={o.nama}
             nama={o.nama}
             hex={o.hex}
+            minggu={putaran?.minggu ?? 1}
             size={110}
             state={tapState[o.nama] ?? 'idle'}
             bonus={faseBonus}

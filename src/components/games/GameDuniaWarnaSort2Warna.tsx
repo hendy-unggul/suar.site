@@ -1,6 +1,7 @@
 // FILE PATH: src/components/games/GameDuniaWarnaSort2Warna.tsx
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getObjekPath } from '@/lib/objekPath'
 import { ColorPalette } from '@/config/colorPalettes'
 
 type Props = {
@@ -52,12 +53,12 @@ const WARNA_UCAPAN: Record<string, string> = {
   hitam_putih: 'hitam, atau putih',
 }
 
-function BendaMengambang({ nama, size }: { nama: string; hex: string; size: number }) {
+function BendaMengambang({ nama, minggu, size }: { nama: string; hex: string; minggu: number; size: number }) {
   return (
     <div className="benda-mengambang" style={{ width: size, height: size }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={`/images/objek/${nama}.png`}
+        src={getObjekPath(nama, minggu)}
         alt={nama}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
@@ -455,7 +456,7 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, o
       )}
 
       <div className="flex-1 flex items-center justify-center">
-        <BendaMengambang nama={objekBendaAktif} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={100} />
+        <BendaMengambang nama={objekBendaAktif} minggu={putaran?.minggu ?? 1} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={100} />
       </div>
 
       <div className="flex items-end justify-center gap-10 md:gap-16">
