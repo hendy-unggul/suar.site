@@ -169,10 +169,14 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
         .eq('game_key', 'dunia_warna').order('sort_order', { ascending: true })
       if (themesErr || !themesData) { if (isMounted) setError('Gagal memuat tema permainan.'); return }
 
+      const themeIdsTersedia = (themesData as Array<{ id: string; week_range: number[] }>)
+        .filter(t => Array.isArray(t.week_range) && Math.min(...t.week_range.map(Number)) <= currentWeek)
+        .map(t => t.id)
+      if (themeIdsTersedia.length === 0) themeIdsTersedia.push(themesData[0]?.id)
+
       const matchedTheme = themesData.find((t: { week_range: number[] }) =>
         Array.isArray(t.week_range) && t.week_range.map(Number).includes(currentWeek)
       )
-      const themeId = matchedTheme?.id ?? themesData[0]?.id
 
       const mingguTertinggiTemaIni = matchedTheme
         ? Math.max(...(matchedTheme.week_range as number[]))
@@ -197,17 +201,19 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
         .not('warna_key', 'is', null).order('played_at', { ascending: false }).limit(20)
       if (warnaHistoryErr) { if (isMounted) setError('Gagal memuat riwayat warna anak.'); return }
 
-      const { data: variantData, error: variantErr } = await supabase
+      const { data: variantsData, error: variantErr } = await supabase
         .from('game_content_variants').select('id, asset_config, mechanic_level_id')
-        .eq('theme_id', themeId).eq('mechanic_level_id', mechanicData.id).single()
-      if (variantErr || !variantData) { if (isMounted) setError('Gagal memuat konten permainan.'); return }
+        .in('theme_id', themeIdsTersedia).eq('mechanic_level_id', mechanicData.id)
+      if (variantErr || !variantsData || variantsData.length === 0) { if (isMounted) setError('Gagal memuat konten permainan.'); return }
 
       if (!isMounted) return
 
-      setVariant(variantData as ContentVariant)
-      const putaranList = (variantData.asset_config?.putaran ?? []) as Putaran[]
-      const tersedia = putaranList.filter((p) => p.minggu <= currentWeek)
-      const putaranTersediaFinal = tersedia.length ? tersedia : putaranList
+      setVariant(variantsData[0] as ContentVariant)
+      const putaranList = (variantsData as ContentVariant[])
+        .flatMap(v => (v.asset_config?.putaran ?? []) as Putaran[])
+        .filter((p) => p.minggu <= currentWeek)
+      const putaranTersediaFinal = putaranList.length ? putaranList :
+        (variantsData[0].asset_config?.putaran ?? []) as Putaran[]
       setPutaranTersedia(putaranTersediaFinal)
 
       const riwayatAwal = (warnaHistory ?? []) as RiwayatWarna[]
@@ -392,7 +398,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
         <BendaMengambang nama={objekBendaAktif} minggu={putaran?.minggu ?? 1} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={80} />
       </div>
 
-      <div className={`grid gap-3 md:gap-4 w-full max-w-sm ${urutanKeranjang.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
+      <div className={`grid gap-3 md:gap-4 w-full max-w-sm ${urutanKeranjang.length <= 2 ? "grid-cols-2" : urutanKeranjang.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
         {urutanKeranjang.map((k) => (
           <div key={k.warna} className="flex items-center justify-center">
             <KeranjangGrid warna={k.warna} hex={k.hex} size={82} state={keranjangState[k.warna] ?? 'idle'} onTap={() => handleTapKeranjang(k.warna)} />

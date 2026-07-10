@@ -214,10 +214,14 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, o
         return
       }
 
-      const matchedTheme = themesData.find((t: { week_range: number[] }) =>
-        Array.isArray(t.week_range) && t.week_range.map(Number).includes(currentWeek)
-      )
-      const themeId = matchedTheme?.id ?? themesData[0]?.id
+      // Ambil SEMUA theme yang week_range <= currentWeek supaya
+      // putaranTersedia mencakup semua minggu yang sudah dipelajari
+      const themeIdsTersedia = (themesData as Array<{ id: string; week_range: number[] }>)
+        .filter(t => Array.isArray(t.week_range) && Math.min(...t.week_range.map(Number)) <= currentWeek)
+        .map(t => t.id)
+
+      // Fallback ke theme pertama kalau tidak ada yang match
+      if (themeIdsTersedia.length === 0) themeIdsTersedia.push(themesData[0]?.id)
 
       const { data: warnaHistory, error: warnaHistoryErr } = await supabase
         .from('game_sessions')
@@ -233,25 +237,26 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, o
         return
       }
 
-      const { data: variantData, error: variantErr } = await supabase
+      const { data: variantsData, error: variantErr } = await supabase
         .from('game_content_variants')
         .select('id, asset_config, mechanic_level_id')
-        .eq('theme_id', themeId)
+        .in('theme_id', themeIdsTersedia)
         .eq('mechanic_level_id', mechanicData.id)
-        .single()
 
-      if (variantErr || !variantData) {
+      if (variantErr || !variantsData || variantsData.length === 0) {
         if (isMounted) setError('Gagal memuat konten permainan.')
         return
       }
 
       if (!isMounted) return
 
-      setVariant(variantData as ContentVariant)
+      setVariant(variantsData[0] as ContentVariant)
 
-      const putaranList = (variantData.asset_config?.putaran ?? []) as Putaran[]
-      const tersedia = putaranList.filter((p) => p.minggu <= currentWeek)
-      const putaranTersediaFinal = tersedia.length ? tersedia : putaranList
+      const putaranList = (variantsData as ContentVariant[])
+        .flatMap(v => (v.asset_config?.putaran ?? []) as Putaran[])
+        .filter((p) => p.minggu <= currentWeek)
+      const putaranTersediaFinal = putaranList.length ? putaranList :
+        (variantsData[0].asset_config?.putaran ?? []) as Putaran[]
       setPutaranTersedia(putaranTersediaFinal)
 
       const riwayatAwal = (warnaHistory ?? []) as RiwayatWarna[]
