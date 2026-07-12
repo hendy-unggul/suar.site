@@ -41,7 +41,7 @@ function MainGameContent() {
   const hariParam = searchParams.get('hari') ?? 'senin'
   const hari = hariParam in HARI_KE_MECHANIC_KEY ? hariParam : 'senin'
 
-  const devBypassGate = searchParams.get('dev_bypass_gate') === '1'
+  const devBypassGate = !!searchParams.get('dev_bypass_gate')
 
   // ?mode=freeplay sekarang sama dengan ?hari=tantangan (Opsi A)
   // Freeplay = Tantangan yang bisa dimainkan bebas setelah Jumat selesai
