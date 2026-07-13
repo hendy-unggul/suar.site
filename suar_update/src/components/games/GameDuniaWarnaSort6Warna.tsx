@@ -1,4 +1,4 @@
-// FILE PATH: src/components/games/GameDuniaWarnaSort2Warna.tsx
+// FILE PATH: src/components/games/GameDuniaWarnaSort6Warna.tsx
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getObjekPath } from '@/lib/objekPath'
@@ -21,6 +21,7 @@ type Putaran = {
   minggu: number
   warna_sort: string[]
   objek: Record<string, string[]>
+  shades_berbeda?: boolean
 }
 
 type ContentVariant = {
@@ -80,31 +81,15 @@ function BendaMengambang({ nama, minggu, size }: { nama: string; hex: string; mi
   )
 }
 
-function Keranjang({
-  warna,
-  hex,
-  size,
-  state,
-  onTap,
-}: {
-  warna: string
-  hex: string
-  size: number
-  state: 'idle' | 'wrong' | 'correct'
-  onTap: () => void
+function KeranjangGrid({ warna, hex, size, state, onTap }: {
+  warna: string; hex: string; size: number; state: 'idle' | 'wrong' | 'correct'; onTap: () => void
 }) {
   return (
-    <button
-      onClick={onTap}
-      aria-label={`keranjang ${warna.replace(/_/g, ' ')}`}
-      className={[
-        'relative flex items-center justify-center transition-transform duration-300',
-        state === 'idle' ? 'keranjang-idle' : '',
-        state === 'wrong' ? 'keranjang-wrong' : '',
-        state === 'correct' ? 'keranjang-correct' : '',
-      ].join(' ')}
-      style={{ width: size, height: size, minWidth: 90, minHeight: 90 }}
-    >
+    <button onClick={onTap} aria-label={`keranjang ${warna.replace(/_/g, ' ')}`}
+      className={['relative flex items-center justify-center transition-transform duration-300',
+        state === 'idle' ? 'keranjang-idle' : '', state === 'wrong' ? 'keranjang-wrong' : '',
+        state === 'correct' ? 'keranjang-correct' : ''].join(' ')}
+      style={{ width: size, height: size, minWidth: 80, minHeight: 80 }}>
       <svg viewBox="0 0 100 90" width={size} height={size * 0.9}>
         <ellipse cx="50" cy="22" rx="42" ry="10" fill={hex} opacity={0.85} />
         <path d="M10 22 L20 75 Q50 85 80 75 L90 22 Z" fill={hex} />
@@ -117,18 +102,13 @@ function Keranjang({
 }
 
 type RiwayatWarna = {
-  warna_key: string | null
-  correct_items: number
-  total_items: number
-  played_at: string
+  warna_key: string | null; correct_items: number; total_items: number; played_at: string
 }
 
 function pilihPutaranBerbobot(putaranList: Putaran[], riwayat: RiwayatWarna[]): Putaran | null {
   if (putaranList.length === 0) return null
   if (putaranList.length === 1) return putaranList[0]
-
   const warnaSortTerakhir = riwayat[0]?.warna_key ?? null
-
   const bobotList = putaranList.map((p) => {
     if (p.warna_sort.includes(warnaSortTerakhir ?? '')) return 0
     const riwayatRelevan = riwayat.filter((r) => p.warna_sort.includes(r.warna_key ?? ''))
@@ -138,15 +118,10 @@ function pilihPutaranBerbobot(putaranList: Putaran[], riwayat: RiwayatWarna[]): 
     const akurasi = totalItem > 0 ? totalBenar / totalItem : 0
     return 0.5 + (1 - akurasi) * 2.5
   })
-
   const totalBobot = bobotList.reduce((sum, b) => sum + b, 0)
   if (totalBobot === 0) return putaranList[Math.floor(Math.random() * putaranList.length)]
-
   let acak = Math.random() * totalBobot
-  for (let i = 0; i < putaranList.length; i++) {
-    acak -= bobotList[i]
-    if (acak <= 0) return putaranList[i]
-  }
+  for (let i = 0; i < putaranList.length; i++) { acak -= bobotList[i]; if (acak <= 0) return putaranList[i] }
   return putaranList[putaranList.length - 1]
 }
 
@@ -158,7 +133,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
+export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
   const [putaranTersedia, setPutaranTersedia] = useState<Putaran[]>([])
@@ -172,7 +147,6 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
   const TARGET_REPETISI = 3
   const [repetisiKe, setRepetisiKe] = useState(1)
   const [riwayatWarnaSesi, setRiwayatWarnaSesi] = useState<RiwayatWarna[]>([])
-
   const [faseBonus, setFaseBonus] = useState(false)
   const [bonusIndex, setBonusIndex] = useState(0)
   const BONUS_TOTAL = 3
@@ -181,6 +155,8 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
   const repetisiStartRef = useRef<number>(Date.now())
   const sudahGreetingRef = useRef(false)
   const sessionStartRef = useRef<number>(Date.now())
+  const [nextWeekNumber, setNextWeekNumber] = useState<number | null>(null)
+  const [nextWeekVariantId, setNextWeekVariantId] = useState<string | null>(null)
 
   useEffect(() => {
     let isMounted = true
@@ -190,81 +166,63 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       setError(null)
 
       const { data: existingSessions, error: sessionErr } = await supabase
-        .from('game_sessions')
-        .select('week_number')
-        .eq('child_id', childId)
-        .eq('game_key', gameKey)
-        .order('week_number', { ascending: false })
-        .limit(1)
-
-      if (sessionErr) {
-        if (isMounted) setError('Gagal memuat riwayat progres anak.')
-        return
-      }
+        .from('game_sessions').select('week_number').eq('child_id', childId)
+        .eq('game_key', gameKey).order('week_number', { ascending: false }).limit(1)
+      if (sessionErr) { if (isMounted) setError('Gagal memuat riwayat progres anak.'); return }
 
       const currentWeek = existingSessions?.[0]?.week_number ?? 1
 
       const { data: mechanicData, error: mechanicErr } = await supabase
-        .from('game_mechanic_levels')
-        .select('id, config')
-        .eq('game_key', gameKey)
-        .eq('level_key', 'sort_2_warna')
-        .single()
-
-      if (mechanicErr || !mechanicData) {
-        if (isMounted) setError('Gagal memuat konfigurasi tingkat permainan.')
-        return
-      }
+        .from('game_mechanic_levels').select('id, config')
+        .eq('game_key', gameKey).eq('level_key', 'sort_6_warna').single()
+      if (mechanicErr || !mechanicData) { if (isMounted) setError('Gagal memuat konfigurasi tingkat permainan.'); return }
 
       const { data: themesData, error: themesErr } = await supabase
-        .from('game_themes')
-        .select('id, week_range')
-        .eq('game_key', gameKey)
-        .order('sort_order', { ascending: true })
+        .from('game_themes').select('id, week_range')
+        .eq('game_key', gameKey).order('sort_order', { ascending: true })
+      if (themesErr || !themesData) { if (isMounted) setError('Gagal memuat tema permainan.'); return }
 
-      if (themesErr || !themesData) {
-        if (isMounted) setError('Gagal memuat tema permainan.')
-        return
-      }
-
-      // Ambil SEMUA theme yang week_range <= currentWeek supaya
-      // putaranTersedia mencakup semua minggu yang sudah dipelajari
+      // Ambil semua theme ids yang week_range <= currentWeek
       const themeIdsTersedia = (themesData as Array<{ id: string; week_range: number[] }>)
         .filter(t => Array.isArray(t.week_range) && Math.min(...t.week_range.map(Number)) <= currentWeek)
         .map(t => t.id)
-
-      // Fallback ke theme pertama kalau tidak ada yang match
       if (themeIdsTersedia.length === 0) themeIdsTersedia.push(themesData[0]?.id)
 
-      const { data: warnaHistory, error: warnaHistoryErr } = await supabase
-        .from('game_sessions')
-        .select('warna_key, correct_items, total_items, played_at')
-        .eq('child_id', childId)
-        .eq('game_key', gameKey)
-        .not('warna_key', 'is', null)
-        .order('played_at', { ascending: false })
-        .limit(20)
-
-      if (warnaHistoryErr) {
-        if (isMounted) setError('Gagal memuat riwayat warna anak.')
-        return
+      // Untuk bukaMingguBerikutnya: cari minggu tertinggi yang sudah tersedia
+      const matchedTheme = themesData.find((t: { week_range: number[] }) =>
+        Array.isArray(t.week_range) && t.week_range.map(Number).includes(currentWeek)
+      )
+      const mingguTertinggiTemaIni = matchedTheme
+        ? Math.max(...(matchedTheme.week_range as number[]))
+        : currentWeek
+      const calonNextWeek = mingguTertinggiTemaIni + 1
+      const nextTheme = (themesData as Array<{ id: string; week_range: number[] }>).find(
+        (t) => Array.isArray(t.week_range) && t.week_range.map(Number).includes(calonNextWeek)
+      )
+      if (nextTheme) {
+        const { data: nextVariantData } = await supabase
+          .from('game_content_variants').select('id')
+          .eq('theme_id', nextTheme.id).eq('mechanic_level_id', mechanicData.id).single()
+        if (nextVariantData && isMounted) {
+          setNextWeekNumber(calonNextWeek)
+          setNextWeekVariantId(nextVariantData.id)
+        }
       }
+
+      const { data: warnaHistory, error: warnaHistoryErr } = await supabase
+        .from('game_sessions').select('warna_key, correct_items, total_items, played_at')
+        .eq('child_id', childId).eq('game_key', gameKey)
+        .not('warna_key', 'is', null).order('played_at', { ascending: false }).limit(20)
+      if (warnaHistoryErr) { if (isMounted) setError('Gagal memuat riwayat warna anak.'); return }
 
       const { data: variantsData, error: variantErr } = await supabase
-        .from('game_content_variants')
-        .select('id, asset_config, mechanic_level_id')
-        .in('theme_id', themeIdsTersedia)
-        .eq('mechanic_level_id', mechanicData.id)
-
-      if (variantErr || !variantsData || variantsData.length === 0) {
-        if (isMounted) setError('Gagal memuat konten permainan.')
-        return
-      }
+        .from('game_content_variants').select('id, asset_config, mechanic_level_id')
+        .in('theme_id', themeIdsTersedia).eq('mechanic_level_id', mechanicData.id)
+      if (variantErr || !variantsData || variantsData.length === 0) { if (isMounted) setError('Gagal memuat konten permainan.'); return }
 
       if (!isMounted) return
 
       setVariant(variantsData[0] as ContentVariant)
-
       const putaranList = (variantsData as ContentVariant[])
         .flatMap(v => (v.asset_config?.putaran ?? []) as Putaran[])
         .filter((p) => p.minggu <= currentWeek)
@@ -275,7 +233,7 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       const riwayatAwal = (warnaHistory ?? []) as RiwayatWarna[]
       const dipilih = pilihPutaranBerbobot(putaranTersediaFinal, riwayatAwal)
       setPutaran(dipilih)
-      if (dipilih) setWarnaBendaAktif(dipilih.warna_sort[0])
+      if (dipilih) setWarnaBendaAktif(dipilih.warna_sort[Math.floor(Math.random() * dipilih.warna_sort.length)])
       setLoading(false)
     }
 
@@ -288,10 +246,7 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
     ? (putaran.objek[warnaBendaAktif] ?? ['apel'])[indexAktif % (putaran.objek[warnaBendaAktif]?.length ?? 1)]
     : 'apel'
 
-  const keranjangData = putaran
-    ? putaran.warna_sort.map((w) => ({ warna: w, hex: WARNA_HEX[w] ?? '#C9C7BE' }))
-    : []
-
+  const keranjangData = putaran ? putaran.warna_sort.map((w) => ({ warna: w, hex: WARNA_HEX[w] ?? '#C9C7BE' })) : []
   const [urutanKeranjang, setUrutanKeranjang] = useState<typeof keranjangData>([])
   useEffect(() => {
     setUrutanKeranjang([...keranjangData].sort(() => Math.random() - 0.5))
@@ -302,15 +257,12 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
     if (typeof window === 'undefined' || !window.speechSynthesis) return
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(teks)
-    utterance.lang = 'id-ID'
-    utterance.rate = 0.85
-    utterance.pitch = 1.1
+    utterance.lang = 'id-ID'; utterance.rate = 0.85; utterance.pitch = 1.1
     window.speechSynthesis.speak(utterance)
   }, [])
 
   const playInstruksiAwal = useCallback((warnaKey: string) => {
-    const nama = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
-    ucapkan(`Masukkan ke keranjang warna ${nama}!`)
+    ucapkan(`Masukkan ke keranjang warna ${(atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)}!`)
   }, [ucapkan])
 
   const playAudioCue = useCallback((warnaKey: string) => {
@@ -320,24 +272,21 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
 
   const FRASA_ENCOURAGEMENT = ['Bagus sekali! Ayo lanjut lagi.', 'Hebat! Satu lagi ya.', 'Pintar! Yuk coba lagi.']
   const playEncouragement = useCallback((repetisiSelesai: number) => {
-    const frasa = FRASA_ENCOURAGEMENT[(repetisiSelesai - 1) % FRASA_ENCOURAGEMENT.length]
-    ucapkan(frasa)
+    ucapkan(FRASA_ENCOURAGEMENT[(repetisiSelesai - 1) % FRASA_ENCOURAGEMENT.length])
   }, [ucapkan])
 
-  const simpanRepetisiLog = useCallback(
-    async (repetisiKeSelesai: number, targetValue: string, jumlahSalah: number, diselesaikan: boolean) => {
-      const durasiMs = Date.now() - repetisiStartRef.current
-      await supabase.from('repetisi_log').insert({
-        child_id: childId, game_key: gameKey, mechanic_level_key: 'sort_2_warna',
-        repetisi_ke: repetisiKeSelesai, target_value: targetValue,
-        jumlah_salah_sebelum_benar: jumlahSalah, durasi_ms: durasiMs, diselesaikan,
-      })
-    }, [childId])
+  const simpanRepetisiLog = useCallback(async (repetisiKeSelesai: number, targetValue: string, jumlahSalah: number, diselesaikan: boolean) => {
+    const durasiMs = Date.now() - repetisiStartRef.current
+    await supabase.from('repetisi_log').insert({
+      child_id: childId, game_key: gameKey, mechanic_level_key: 'sort_6_warna',
+      repetisi_ke: repetisiKeSelesai, target_value: targetValue,
+      jumlah_salah_sebelum_benar: jumlahSalah, durasi_ms: durasiMs, diselesaikan,
+    })
+  }, [childId])
 
   useEffect(() => {
     if (!warnaBendaAktif) return
     const isAwalSesi = repetisiKe === 1 && bendaIndex === 0 && !faseBonus
-
     if (isAwalSesi && !sudahGreetingRef.current) {
       sudahGreetingRef.current = true
       const namaPanggilan = childName?.trim() || 'adik'
@@ -345,58 +294,36 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       const t2 = setTimeout(() => playInstruksiAwal(warnaBendaAktif), 2400)
       return () => { clearTimeout(t1); clearTimeout(t2) }
     }
-
-    const delay = faseBonus ? 150 : 400
-    const timeout = setTimeout(() => playInstruksiAwal(warnaBendaAktif), delay)
+    const timeout = setTimeout(() => playInstruksiAwal(warnaBendaAktif), faseBonus ? 150 : 400)
     return () => clearTimeout(timeout)
   }, [warnaBendaAktif, bendaIndex, faseBonus, bonusIndex, repetisiKe, childName, ucapkan, playInstruksiAwal])
 
   function handleTapKeranjang(warnaKeranjang: string) {
     if (faseBonus) return handleTapBonus(warnaKeranjang)
     if (!putaran) return
-
     const isBenar = warnaKeranjang === warnaBendaAktif
-
     if (isBenar) {
       setKeranjangState((s) => ({ ...s, [warnaKeranjang]: 'correct' }))
       playAudioCue(warnaBendaAktif)
       const newCorrectCount = correctCount + 1
       setCorrectCount(newCorrectCount)
-
       setTimeout(() => {
         const jumlahObjekWarnaIni = putaran.objek[warnaBendaAktif]?.length ?? 1
         const isLastBenda = bendaIndex + 1 >= jumlahObjekWarnaIni
-
         if (isLastBenda) {
           simpanSesiNormal(newCorrectCount, putaran, warnaBendaAktif)
           simpanRepetisiLog(repetisiKe, warnaBendaAktif, jumlahSalahRef.current, true)
-          setRiwayatWarnaSesi((prev) => [{
-            warna_key: warnaBendaAktif, correct_items: newCorrectCount,
-            total_items: jumlahObjekWarnaIni, played_at: new Date().toISOString(),
-          }, ...prev])
-
+          setRiwayatWarnaSesi((prev) => [{ warna_key: warnaBendaAktif, correct_items: newCorrectCount, total_items: jumlahObjekWarnaIni, played_at: new Date().toISOString() }, ...prev])
           if (repetisiKe < TARGET_REPETISI) {
-            const putaranBaru = pilihPutaranBerbobot(putaranTersedia, [{
-              warna_key: warnaBendaAktif, correct_items: newCorrectCount,
-              total_items: jumlahObjekWarnaIni, played_at: new Date().toISOString(),
-            }, ...riwayatWarnaSesi])
+            const putaranBaru = pilihPutaranBerbobot(putaranTersedia, [{ warna_key: warnaBendaAktif, correct_items: newCorrectCount, total_items: jumlahObjekWarnaIni, played_at: new Date().toISOString() }, ...riwayatWarnaSesi])
             playEncouragement(repetisiKe)
-            jumlahSalahRef.current = 0
-            repetisiStartRef.current = Date.now()
+            jumlahSalahRef.current = 0; repetisiStartRef.current = Date.now()
             setPutaran(putaranBaru)
             if (putaranBaru) setWarnaBendaAktif(putaranBaru.warna_sort[Math.floor(Math.random() * putaranBaru.warna_sort.length)])
-            setRepetisiKe((r) => r + 1)
-            setBendaIndex(0)
-            setCorrectCount(0)
-            setKeranjangState({})
-          } else {
-            setFaseBonus(true)
-            setBonusIndex(0)
-            setKeranjangState({})
-          }
+            setRepetisiKe((r) => r + 1); setBendaIndex(0); setCorrectCount(0); setKeranjangState({})
+          } else { setFaseBonus(true); setBonusIndex(0); setKeranjangState({}) }
         } else {
-          setBendaIndex((i) => i + 1)
-          setKeranjangState({})
+          setBendaIndex((i) => i + 1); setKeranjangState({})
           setWarnaBendaAktif(putaran.warna_sort[Math.floor(Math.random() * putaran.warna_sort.length)])
         }
       }, 700)
@@ -414,12 +341,12 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       setKeranjangState((s) => ({ ...s, [warnaKeranjang]: 'correct' }))
       playAudioCue(warnaBendaAktif)
       setTimeout(() => {
-        const isLastBonus = bonusIndex + 1 >= BONUS_TOTAL
-        if (isLastBonus) {
-          onSessionComplete?.({ correctItems: correctCount, totalItems: putaran?.warna_sort.length ?? 0, levelTerbuka: true })
+        if (bonusIndex + 1 >= BONUS_TOTAL) {
+          bukaMingguBerikutnya().then(() => {
+            onSessionComplete?.({ correctItems: correctCount, totalItems: putaran?.warna_sort.length ?? 0, levelTerbuka: true })
+          })
         } else {
-          setBonusIndex((i) => i + 1)
-          setKeranjangState({})
+          setBonusIndex((i) => i + 1); setKeranjangState({})
           if (putaran) setWarnaBendaAktif(putaran.warna_sort[Math.floor(Math.random() * putaran.warna_sort.length)])
         }
       }, 350)
@@ -428,6 +355,15 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       playInstruksiAwal(warnaBendaAktif)
       setTimeout(() => { setKeranjangState((s) => ({ ...s, [warnaKeranjang]: 'idle' })) }, 250)
     }
+  }
+
+  async function bukaMingguBerikutnya() {
+    if (!nextWeekNumber || !nextWeekVariantId) return
+    await supabase.from('game_sessions').insert({
+      child_id: childId, game_key: gameKey, content_variant_id: nextWeekVariantId,
+      session_day: deteksiSessionDay(), week_number: nextWeekNumber,
+      total_items: 0, correct_items: 0, duration_seconds: 0, attempt_number: 1, warna_key: null,
+    })
   }
 
   async function simpanSesiNormal(finalCorrectCount: number, putaranSesi: Putaran, warnaKey: string) {
@@ -446,7 +382,6 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
       <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
     </div>
   )
-
   if (error) return (
     <div style={{ backgroundColor: colors.background, color: colors.text }} className="min-h-[480px] flex items-center justify-center text-center px-6">
       <p className="text-sm opacity-70">{error}</p>
@@ -454,7 +389,7 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
   )
 
   return (
-    <div style={{ backgroundColor: colors.background }} className="relative min-h-[480px] flex flex-col items-center justify-between gap-8 px-6 py-10 overflow-hidden select-none">
+    <div style={{ backgroundColor: colors.background }} className="relative min-h-[480px] flex flex-col items-center justify-between gap-6 px-4 py-8 overflow-hidden select-none">
       <style>{`
         @keyframes benda-float { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-6px) rotate(-2deg); } }
         .benda-mengambang { animation: benda-float 3.2s ease-in-out infinite; }
@@ -473,14 +408,15 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
         <div className="bonus-border absolute inset-3 rounded-3xl pointer-events-none" style={{ border: `4px solid ${colors.accent}` }} aria-hidden="true" />
       )}
 
-      <div className="flex-1 flex items-center justify-center">
-        <BendaMengambang nama={objekBendaAktif} minggu={putaran?.minggu ?? 1} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={100} />
+      <div className="flex items-center justify-center" style={{ minHeight: 90 }}>
+        <BendaMengambang nama={objekBendaAktif} minggu={putaran?.minggu ?? 1} hex={WARNA_HEX[warnaBendaAktif] ?? '#C9C7BE'} size={80} />
       </div>
 
-      <div className="flex items-end justify-center gap-10 md:gap-16">
+      <div className={`grid gap-3 md:gap-4 w-full max-w-sm ${urutanKeranjang.length <= 2 ? "grid-cols-2" : urutanKeranjang.length <= 4 ? "grid-cols-2" : "grid-cols-3"}`}>
         {urutanKeranjang.map((k) => (
-          <Keranjang key={k.warna} warna={k.warna} hex={k.hex} size={110}
-            state={keranjangState[k.warna] ?? 'idle'} onTap={() => handleTapKeranjang(k.warna)} />
+          <div key={k.warna} className="flex items-center justify-center">
+            <KeranjangGrid warna={k.warna} hex={k.hex} size={82} state={keranjangState[k.warna] ?? 'idle'} onTap={() => handleTapKeranjang(k.warna)} />
+          </div>
         ))}
       </div>
 
