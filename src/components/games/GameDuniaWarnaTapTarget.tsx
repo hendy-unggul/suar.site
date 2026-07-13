@@ -8,6 +8,8 @@ type Props = {
   childId: string
   childName: string
   colors: ColorPalette
+  gameKey?: string
+  atributUcapan?: Record<string, string>
   onSessionComplete?: (result: {
     correctItems: number
     totalItems: number
@@ -57,12 +59,22 @@ const WARNA_UCAPAN: Record<string, string> = {
   merah_jambu: 'merah muda',
   abu: 'abu-abu',
   hitam_putih: 'hitam, atau putih',
+  // Bulan 2: Dunia Bentuk
+  lingkaran: 'lingkaran',
+  persegi: 'persegi',
+  segitiga: 'segitiga',
+  // Bulan 3: Dunia Ukuran
+  besar: 'besar',
+  kecil: 'kecil',
+  panjang: 'panjang',
+  pendek: 'pendek',
+  tinggi: 'tinggi',
+  rendah: 'rendah',
 }
 
 function ObjekBuah({
   nama,
   hex,
-  minggu,
   size,
   state,
   bonus,
@@ -90,7 +102,7 @@ function ObjekBuah({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getObjekPath(nama, minggu ?? 1)}
+        src={getObjekPath(nama, putaran?.minggu ?? 1)}
         alt={nama}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
@@ -147,7 +159,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaTapTarget({ childId, childName, colors, onSessionComplete }: Props) {
+export default function GameDuniaWarnaTapTarget({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [mechanic, setMechanic] = useState<MechanicLevel | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
@@ -184,7 +196,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
         .from('game_sessions')
         .select('week_number')
         .eq('child_id', childId)
-        .eq('game_key', 'dunia_warna')
+        .eq('game_key', gameKey)
         .order('week_number', { ascending: false })
         .limit(1)
 
@@ -198,7 +210,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
       const { data: mechanicData, error: mechanicErr } = await supabase
         .from('game_mechanic_levels')
         .select('id, config')
-        .eq('game_key', 'dunia_warna')
+        .eq('game_key', gameKey)
         .eq('level_key', 'tap_target')
         .single()
 
@@ -210,7 +222,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
       const { data: themesData, error: themesErr } = await supabase
         .from('game_themes')
         .select('id, week_range')
-        .eq('game_key', 'dunia_warna')
+        .eq('game_key', gameKey)
         .order('sort_order', { ascending: true })
 
       if (themesErr || !themesData) {
@@ -231,7 +243,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
         .from('game_sessions')
         .select('warna_key, correct_items, total_items, played_at')
         .eq('child_id', childId)
-        .eq('game_key', 'dunia_warna')
+        .eq('game_key', gameKey)
         .not('warna_key', 'is', null)
         .order('played_at', { ascending: false })
         .limit(20)
@@ -307,7 +319,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
 
   const playInstruksiAwal = useCallback(
     (warnaKey: string) => {
-      const namaWarna = WARNA_UCAPAN[warnaKey] ?? warnaKey
+      const namaWarna = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
       ucapkan(`Yang mana warna ${namaWarna}?`)
     },
     [ucapkan]
@@ -315,7 +327,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
 
   const playAudioCue = useCallback(
     (warnaKey: string) => {
-      const namaWarna = WARNA_UCAPAN[warnaKey] ?? warnaKey
+      const namaWarna = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
       ucapkan(namaWarna.charAt(0).toUpperCase() + namaWarna.slice(1) + '!')
     },
     [ucapkan]
@@ -341,7 +353,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
       const durasiMs = Date.now() - repetisiStartRef.current
       await supabase.from('repetisi_log').insert({
         child_id: childId,
-        game_key: 'dunia_warna',
+        game_key: gameKey,
         mechanic_level_key: 'tap_target',
         repetisi_ke: repetisiKeSelesai,
         target_value: targetValue,
@@ -474,7 +486,7 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, on
 
     await supabase.from('game_sessions').insert({
       child_id: childId,
-      game_key: 'dunia_warna',
+      game_key: gameKey,
       content_variant_id: variant.id,
       session_day: deteksiSessionDay(),
       week_number: putaranSesi.minggu,

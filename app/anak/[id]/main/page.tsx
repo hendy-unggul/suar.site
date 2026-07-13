@@ -9,8 +9,6 @@ import GameDuniaWarnaTapTarget from '@/components/games/GameDuniaWarnaTapTarget'
 import GameDuniaWarnaTapDistractor from '@/components/games/GameDuniaWarnaTapDistractor'
 import GameDuniaWarnaSort2Warna from '@/components/games/GameDuniaWarnaSort2Warna'
 import GameDuniaWarnaSort6Warna from '@/components/games/GameDuniaWarnaSort6Warna'
-import GameDuniaWarnaFreeplay from '@/components/games/GameDuniaWarnaFreeplay'
-
 type ChildWithSchool = {
   id: string
   name: string
@@ -40,11 +38,8 @@ function MainGameContent() {
   const hariParam = searchParams.get('hari') ?? 'senin'
   const hari = hariParam in HARI_KE_MECHANIC_KEY ? hariParam : 'senin'
 
-  const devBypassGate = !!searchParams.get('dev_bypass_gate')
+  const devBypassGate = searchParams.get('dev_bypass_gate') === '1'
 
-  // ?mode=freeplay sekarang sama dengan ?hari=tantangan (Opsi A)
-  // Freeplay = Tantangan yang bisa dimainkan bebas setelah Jumat selesai
-  const isFreeplay = searchParams.get('mode') === 'freeplay'
 
   const [child, setChild] = useState<ChildWithSchool | null>(null)
   const [loading, setLoading] = useState(true)
@@ -121,8 +116,7 @@ function MainGameContent() {
         return
       }
 
-      // Freeplay = tantangan, gate sama
-      const hariEfektif = isFreeplay ? 'tantangan' : hari
+      const hariEfektif = hari
 
       // Senin selalu terbuka
       const indexHariIni = URUTAN_HARI.indexOf(hariEfektif)
@@ -178,7 +172,7 @@ function MainGameContent() {
 
     cekGate()
     return () => { isMounted = false }
-  }, [childId, child, hari, isFreeplay, devBypassGate])
+  }, [childId, child, hari, devBypassGate])
 
   if (loading) {
     return (
@@ -199,42 +193,47 @@ function MainGameContent() {
   const paletteKey = child.classes?.schools?.color_palette ?? 'palette_1'
   const colors = colorPalettes[paletteKey] ?? colorPalettes['palette_1']
 
-  // Freeplay = Tantangan (Sort6Warna), gate sudah dicek di atas
-  if (isFreeplay) {
-    if (gateStatus === 'checking') {
-      return (
-        <div style={{ backgroundColor: colors.background }} className="min-h-screen flex items-center justify-center">
-          <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
-        </div>
-      )
+  // Config per bulan berdasarkan minggu aktif anak
+  // Minggu 1-4 = dunia_warna, Minggu 5-8 = dunia_bentuk, dst
+  const [currentWeekForGame, setCurrentWeekForGame] = useState(1)
+  useEffect(() => {
+    supabase
+      .from('game_sessions')
+      .select('week_number')
+      .eq('child_id', child.id)
+      .order('week_number', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (data?.[0]?.week_number) setCurrentWeekForGame(data[0].week_number)
+      })
+  }, [child.id])
+
+  const getGameConfig = (minggu: number) => {
+    if (minggu <= 4) return {
+      gameKey: 'dunia_warna',
+      atributUcapan: {
+        merah: 'merah', kuning: 'kuning', biru: 'biru',
+        hijau: 'hijau', oranye: 'oranye', ungu: 'ungu',
+      }
     }
-    if (gateStatus === 'terkunci') {
-      return (
-        <div style={{ backgroundColor: colors.background, color: colors.text }}
-          className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
-          <div style={{ backgroundColor: colors.secondary }} className="w-24 h-24 rounded-full flex items-center justify-center">
-            <svg viewBox="0 0 24 24" width="40" height="40" fill="none">
-              <rect x="5" y="11" width="14" height="9" rx="2" stroke={colors.text} strokeWidth="2" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" stroke={colors.text} strokeWidth="2" strokeLinecap="round" fill="none" />
-            </svg>
-          </div>
-          <p className="text-sm opacity-60">Selesaikan sesi Jumat dulu untuk membuka Tantangan.</p>
-        </div>
-      )
+    if (minggu <= 8) return {
+      gameKey: 'dunia_bentuk',
+      atributUcapan: {
+        lingkaran: 'lingkaran', persegi: 'persegi', segitiga: 'segitiga',
+      }
     }
-    return (
-      <GameDuniaWarnaSort6Warna
-        key={gameInstanceKey}
-        childId={child.id}
-        childName={child.name}
-        colors={colors}
-        onSessionComplete={() => {
-          // Freeplay/tantangan boleh main berulang, tidak ada layar selesai permanen
-          setGameInstanceKey((k) => k + 1)
-        }}
-      />
-    )
+    if (minggu <= 12) return {
+      gameKey: 'dunia_ukuran',
+      atributUcapan: {
+        besar: 'besar', kecil: 'kecil', panjang: 'panjang',
+        pendek: 'pendek', tinggi: 'tinggi', rendah: 'rendah',
+      }
+    }
+    return { gameKey: 'dunia_warna', atributUcapan: {} }
   }
+
+  const gameConfig = getGameConfig(currentWeekForGame)
+
 
   if (sessionResult) {
     return (
@@ -300,6 +299,8 @@ function MainGameContent() {
         childId={child.id}
         childName={child.name}
         colors={colors}
+        gameKey={gameConfig.gameKey}
+        atributUcapan={gameConfig.atributUcapan}
         onSessionComplete={setSessionResult}
       />
     )
@@ -312,6 +313,8 @@ function MainGameContent() {
         childId={child.id}
         childName={child.name}
         colors={colors}
+        gameKey={gameConfig.gameKey}
+        atributUcapan={gameConfig.atributUcapan}
         onSessionComplete={setSessionResult}
       />
     )
@@ -324,6 +327,8 @@ function MainGameContent() {
         childId={child.id}
         childName={child.name}
         colors={colors}
+        gameKey={gameConfig.gameKey}
+        atributUcapan={gameConfig.atributUcapan}
         onSessionComplete={setSessionResult}
       />
     )
@@ -335,6 +340,8 @@ function MainGameContent() {
       childId={child.id}
       childName={child.name}
       colors={colors}
+      gameKey={gameConfig.gameKey}
+      atributUcapan={gameConfig.atributUcapan}
       onSessionComplete={setSessionResult}
     />
   )

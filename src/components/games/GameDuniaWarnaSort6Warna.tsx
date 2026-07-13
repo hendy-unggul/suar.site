@@ -8,6 +8,8 @@ type Props = {
   childId: string
   childName: string
   colors: ColorPalette
+  gameKey?: string
+  atributUcapan?: Record<string, string>
   onSessionComplete?: (result: {
     correctItems: number
     totalItems: number
@@ -52,6 +54,17 @@ const WARNA_UCAPAN: Record<string, string> = {
   merah_jambu: 'merah muda',
   abu: 'abu-abu',
   hitam_putih: 'hitam, atau putih',
+  // Bulan 2: Dunia Bentuk
+  lingkaran: 'lingkaran',
+  persegi: 'persegi',
+  segitiga: 'segitiga',
+  // Bulan 3: Dunia Ukuran
+  besar: 'besar',
+  kecil: 'kecil',
+  panjang: 'panjang',
+  pendek: 'pendek',
+  tinggi: 'tinggi',
+  rendah: 'rendah',
 }
 
 function BendaMengambang({ nama, minggu, size }: { nama: string; hex: string; minggu: number; size: number }) {
@@ -120,7 +133,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, onSessionComplete }: Props) {
+export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
   const [putaranTersedia, setPutaranTersedia] = useState<Putaran[]>([])
@@ -154,30 +167,31 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
 
       const { data: existingSessions, error: sessionErr } = await supabase
         .from('game_sessions').select('week_number').eq('child_id', childId)
-        .eq('game_key', 'dunia_warna').order('week_number', { ascending: false }).limit(1)
+        .eq('game_key', gameKey).order('week_number', { ascending: false }).limit(1)
       if (sessionErr) { if (isMounted) setError('Gagal memuat riwayat progres anak.'); return }
 
       const currentWeek = existingSessions?.[0]?.week_number ?? 1
 
       const { data: mechanicData, error: mechanicErr } = await supabase
         .from('game_mechanic_levels').select('id, config')
-        .eq('game_key', 'dunia_warna').eq('level_key', 'sort_6_warna').single()
+        .eq('game_key', gameKey).eq('level_key', 'sort_6_warna').single()
       if (mechanicErr || !mechanicData) { if (isMounted) setError('Gagal memuat konfigurasi tingkat permainan.'); return }
 
       const { data: themesData, error: themesErr } = await supabase
         .from('game_themes').select('id, week_range')
-        .eq('game_key', 'dunia_warna').order('sort_order', { ascending: true })
+        .eq('game_key', gameKey).order('sort_order', { ascending: true })
       if (themesErr || !themesData) { if (isMounted) setError('Gagal memuat tema permainan.'); return }
 
+      // Ambil semua theme ids yang week_range <= currentWeek
       const themeIdsTersedia = (themesData as Array<{ id: string; week_range: number[] }>)
         .filter(t => Array.isArray(t.week_range) && Math.min(...t.week_range.map(Number)) <= currentWeek)
         .map(t => t.id)
       if (themeIdsTersedia.length === 0) themeIdsTersedia.push(themesData[0]?.id)
 
+      // Untuk bukaMingguBerikutnya: cari minggu tertinggi yang sudah tersedia
       const matchedTheme = themesData.find((t: { week_range: number[] }) =>
         Array.isArray(t.week_range) && t.week_range.map(Number).includes(currentWeek)
       )
-
       const mingguTertinggiTemaIni = matchedTheme
         ? Math.max(...(matchedTheme.week_range as number[]))
         : currentWeek
@@ -197,7 +211,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
 
       const { data: warnaHistory, error: warnaHistoryErr } = await supabase
         .from('game_sessions').select('warna_key, correct_items, total_items, played_at')
-        .eq('child_id', childId).eq('game_key', 'dunia_warna')
+        .eq('child_id', childId).eq('game_key', gameKey)
         .not('warna_key', 'is', null).order('played_at', { ascending: false }).limit(20)
       if (warnaHistoryErr) { if (isMounted) setError('Gagal memuat riwayat warna anak.'); return }
 
@@ -248,11 +262,11 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
   }, [])
 
   const playInstruksiAwal = useCallback((warnaKey: string) => {
-    ucapkan(`Masukkan ke keranjang warna ${WARNA_UCAPAN[warnaKey] ?? warnaKey}!`)
+    ucapkan(`Masukkan ke keranjang warna ${(atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)}!`)
   }, [ucapkan])
 
   const playAudioCue = useCallback((warnaKey: string) => {
-    const nama = WARNA_UCAPAN[warnaKey] ?? warnaKey
+    const nama = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
     ucapkan(nama.charAt(0).toUpperCase() + nama.slice(1) + '!')
   }, [ucapkan])
 
@@ -264,7 +278,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
   const simpanRepetisiLog = useCallback(async (repetisiKeSelesai: number, targetValue: string, jumlahSalah: number, diselesaikan: boolean) => {
     const durasiMs = Date.now() - repetisiStartRef.current
     await supabase.from('repetisi_log').insert({
-      child_id: childId, game_key: 'dunia_warna', mechanic_level_key: 'sort_6_warna',
+      child_id: childId, game_key: gameKey, mechanic_level_key: 'sort_6_warna',
       repetisi_ke: repetisiKeSelesai, target_value: targetValue,
       jumlah_salah_sebelum_benar: jumlahSalah, durasi_ms: durasiMs, diselesaikan,
     })
@@ -346,7 +360,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
   async function bukaMingguBerikutnya() {
     if (!nextWeekNumber || !nextWeekVariantId) return
     await supabase.from('game_sessions').insert({
-      child_id: childId, game_key: 'dunia_warna', content_variant_id: nextWeekVariantId,
+      child_id: childId, game_key: gameKey, content_variant_id: nextWeekVariantId,
       session_day: deteksiSessionDay(), week_number: nextWeekNumber,
       total_items: 0, correct_items: 0, duration_seconds: 0, attempt_number: 1, warna_key: null,
     })
@@ -356,7 +370,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, o
     if (!variant) return
     const durationSeconds = Math.round((Date.now() - sessionStartRef.current) / 1000)
     await supabase.from('game_sessions').insert({
-      child_id: childId, game_key: 'dunia_warna', content_variant_id: variant.id,
+      child_id: childId, game_key: gameKey, content_variant_id: variant.id,
       session_day: deteksiSessionDay(), week_number: putaranSesi.minggu,
       total_items: putaranSesi.objek[warnaKey]?.length ?? 1, correct_items: finalCorrectCount,
       duration_seconds: durationSeconds, attempt_number: 1, warna_key: warnaKey,
