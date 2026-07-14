@@ -75,6 +75,7 @@ const WARNA_UCAPAN: Record<string, string> = {
 function ObjekBuah({
   nama,
   hex,
+  minggu,
   size,
   state,
   bonus,
@@ -102,7 +103,7 @@ function ObjekBuah({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getObjekPath(nama, putaran?.minggu ?? 1)}
+        src={getObjekPath(nama, minggu ?? 1)}
         alt={nama}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}

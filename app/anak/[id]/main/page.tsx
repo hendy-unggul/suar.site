@@ -195,20 +195,21 @@ function MainGameContent() {
 
   // Config per bulan berdasarkan minggu aktif anak
   // Minggu 1-4 = dunia_warna, Minggu 5-8 = dunia_bentuk, dst
-  const [currentWeekForGame, setCurrentWeekForGame] = useState(1)
+  const [currentWeekForGame, setCurrentWeekForGame] = useState<number | null>(null)
   useEffect(() => {
     supabase
       .from('game_sessions')
-      .select('week_number')
+      .select('week_number, game_key')
       .eq('child_id', child.id)
       .order('week_number', { ascending: false })
       .limit(1)
       .then(({ data }) => {
-        if (data?.[0]?.week_number) setCurrentWeekForGame(data[0].week_number)
+        const w = data?.[0]?.week_number ?? 1
+        setCurrentWeekForGame(w)
       })
   }, [child.id])
 
-  const getGameConfig = (minggu: number) => {
+  const getGameConfig = (minggu: number): { gameKey: string; atributUcapan: Record<string, string> } => {
     if (minggu <= 4) return {
       gameKey: 'dunia_warna',
       atributUcapan: {
@@ -232,7 +233,14 @@ function MainGameContent() {
     return { gameKey: 'dunia_warna', atributUcapan: {} }
   }
 
+  if (currentWeekForGame === null) return (
+    <div style={{ backgroundColor: colors.background }} className="min-h-screen flex items-center justify-center">
+      <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
+    </div>
+  )
+
   const gameConfig = getGameConfig(currentWeekForGame)
+  console.log("DEBUG gameConfig:", currentWeekForGame, gameConfig)
 
 
   if (sessionResult) {
