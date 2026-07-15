@@ -234,7 +234,7 @@ function MainGameContent() {
   }
 
   const gameConfig = getGameConfig(currentWeekForGame ?? 1)
-  console.log("DEBUG gameConfig:", currentWeekForGame, gameConfig)
+  console.log("DEBUG gameConfig:", currentWeekForGame, gameConfig.gameKey, JSON.stringify(gameConfig))
 
 
   if (sessionResult) {
