@@ -233,13 +233,7 @@ function MainGameContent() {
     return { gameKey: 'dunia_warna', atributUcapan: {} }
   }
 
-  if (currentWeekForGame === null) return (
-    <div style={{ backgroundColor: colors.background }} className="min-h-screen flex items-center justify-center">
-      <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
-    </div>
-  )
-
-  const gameConfig = getGameConfig(currentWeekForGame)
+  const gameConfig = getGameConfig(currentWeekForGame ?? 1)
   console.log("DEBUG gameConfig:", currentWeekForGame, gameConfig)
 
 
