@@ -178,6 +178,7 @@ function MainGameContent() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" />
+      <p style={{color:"red",fontSize:20}}>WEEK:{String(currentWeekForGame)}</p>
       </div>
     )
   }
