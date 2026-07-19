@@ -10,6 +10,7 @@ type Props = {
   colors: ColorPalette
   gameKey?: string
   atributUcapan?: Record<string, string>
+  atributLabel?: string
   onSessionComplete?: (result: {
     correctItems: number
     totalItems: number
@@ -194,7 +195,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaTapDistractor({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
+export default function GameDuniaWarnaTapDistractor({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, atributLabel = 'warna', onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [mechanic, setMechanic] = useState<MechanicLevel | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
@@ -362,7 +363,7 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
   const playInstruksiAwal = useCallback(
     (warnaKey: string) => {
       const namaWarna = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
-      ucapkan(`Yang mana warna ${namaWarna}?`)
+      ucapkan(`Yang mana yang ${namaWarna}?`)
     },
     [ucapkan]
   )

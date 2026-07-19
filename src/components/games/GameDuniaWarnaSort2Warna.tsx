@@ -10,6 +10,7 @@ type Props = {
   colors: ColorPalette
   gameKey?: string
   atributUcapan?: Record<string, string>
+  atributLabel?: string
   onSessionComplete?: (result: {
     correctItems: number
     totalItems: number
@@ -158,7 +159,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, onSessionComplete }: Props) {
+export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, atributLabel = 'warna', onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
   const [putaranTersedia, setPutaranTersedia] = useState<Putaran[]>([])
@@ -310,7 +311,7 @@ export default function GameDuniaWarnaSort2Warna({ childId, childName, colors, g
 
   const playInstruksiAwal = useCallback((warnaKey: string) => {
     const nama = (atributUcapan?.[warnaKey] ?? WARNA_UCAPAN[warnaKey] ?? warnaKey)
-    ucapkan(`Masukkan ke keranjang warna ${nama}!`)
+    ucapkan(`Masukkan ke keranjang ${nama}!`)
   }, [ucapkan])
 
   const playAudioCue = useCallback((warnaKey: string) => {
