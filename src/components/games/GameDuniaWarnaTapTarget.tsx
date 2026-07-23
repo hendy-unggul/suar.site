@@ -297,9 +297,15 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, ga
     if (!putaran) return []
     const indexAktif = faseBonus ? bonusIndex : objekIndex
     const target = putaran.objek[indexAktif % putaran.objek.length]
+    // Bulan 2+: distractor_bentuk = objek bentuk lain berwarna
+    // Bulan 1: tidak ada distractor_bentuk, pakai versi abu dari objek yang sama
+    const distractorBentuk = (putaran as any).distractor_bentuk as string[] | undefined
+    const namaDistractor = distractorBentuk?.length
+      ? distractorBentuk[indexAktif % distractorBentuk.length]
+      : `${target}_abu`
     return [
       { nama: target, hex: WARNA_HEX[putaran.warna_target], isTarget: true },
-      { nama: `${target}_abu`, hex: '#C9C7BE', isTarget: false },
+      { nama: namaDistractor, hex: '#C9C7BE', isTarget: false },
     ]
   })()
 

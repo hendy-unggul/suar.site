@@ -327,13 +327,25 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
 
   // ------------------------------------------------------------------
   // Bangun daftar objek tampil:
-  // Senin (tap_target): distractor = objek SAMA versi abu (pisang vs pisang_abu)
-  // Rabu (tap_distractor): distractor = objek RANDOM LAIN versi abu (pisang vs apel_abu)
-  // Kesulitan meningkat karena anak tidak bisa andalkan bentuk, harus fokus warna murni.
+  // Bulan 1 (warna): distractor = objek RANDOM LAIN versi abu
+  // Bulan 2+ (bentuk/ukuran): distractor = objek BENTUK LAIN berwarna
+  //   dari field distractor_bentuk di asset_config
   const objekTampil = (() => {
     if (!putaran) return []
     const indexAktif = faseBonus ? bonusIndex : objekIndex
     const namaTarget = putaran.objek[indexAktif % putaran.objek.length]
+    const distractorBentuk = (putaran as any).distractor_bentuk as string[] | undefined
+
+    if (distractorBentuk?.length) {
+      // Bulan 2+: distractor bentuk lain, berwarna, random dari pool
+      const namaDistractor = distractorBentuk[Math.floor(Math.random() * distractorBentuk.length)]
+      return [
+        { nama: namaTarget, hex: WARNA_HEX[putaran.warna_target], isTarget: true },
+        { nama: namaDistractor, hex: '#C9C7BE', isTarget: false },
+      ]
+    }
+
+    // Bulan 1: distractor = objek random lain versi abu
     const poolDistractor = putaran.objek.filter((o) => o !== namaTarget)
     const namaDistractor = poolDistractor.length > 0
       ? poolDistractor[Math.floor(Math.random() * poolDistractor.length)]
