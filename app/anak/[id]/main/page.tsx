@@ -226,8 +226,9 @@ function MainGameContent() {
     )
   }
 
+  const gameKey2 = `${gameConfig.gameKey}-${currentWeek}`
   const commonProps = {
-    key: gameInstanceKey,
+    key: `${gameInstanceKey}-${gameKey2}`,
     childId: child.id,
     childName: child.name,
     colors,
