@@ -68,7 +68,7 @@ function MainGameContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gateStatus, setGateStatus] = useState<'checking' | 'terbuka' | 'terkunci'>('checking')
-  const [currentWeek, setCurrentWeek] = useState(1)
+  const [currentWeek, setCurrentWeek] = useState<number | null>(null)
   const [sessionResult, setSessionResult] = useState<{ correctItems: number; totalItems: number; levelTerbuka: boolean } | null>(null)
   const [gameInstanceKey, setGameInstanceKey] = useState(0)
 
@@ -156,6 +156,7 @@ function MainGameContent() {
   // AFTER ALL HOOKS — now safe to have conditional returns
   const paletteKey = (child as any)?.classes?.schools?.color_palette ?? 'palette_1'
   const colors = colorPalettes[paletteKey] ?? colorPalettes['palette_1']
+  if (!currentWeek) return <div style={{backgroundColor: colors.background}} className="min-h-screen flex items-center justify-center"><div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" /></div>
   const gameConfig = getGameConfig(currentWeek)
 
   console.log('DEBUG week/gameKey:', currentWeek, gameConfig.gameKey)
