@@ -103,7 +103,7 @@ function MainGameContent() {
       .from('game_sessions')
       .select('week_number')
       .eq('child_id', childId)
-      .order('week_number', { ascending: false })
+      .order('played_at', { ascending: false })
       .limit(1)
       .then(({ data }) => {
         const w = data?.[0]?.week_number ?? 1
