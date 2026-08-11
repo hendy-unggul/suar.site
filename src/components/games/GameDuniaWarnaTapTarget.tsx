@@ -104,7 +104,7 @@ function ObjekBuah({
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={getObjekPath(nama, minggu ?? 1)}
+        src={(() => { const p = getObjekPath(nama, minggu ?? 1); console.log('IMG PATH:', nama, minggu, p); return p; })()}
         alt={nama}
         draggable={false}
         style={{ width: size, height: size, objectFit: 'contain', display: 'block' }}
