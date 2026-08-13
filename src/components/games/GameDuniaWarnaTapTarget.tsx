@@ -303,9 +303,11 @@ export default function GameDuniaWarnaTapTarget({ childId, childName, colors, ga
     const namaDistractor = distractorBentuk?.length
       ? distractorBentuk[indexAktif % distractorBentuk.length]
       : `${target}_abu`
+    // Pass minggu=0 untuk distractor_bentuk supaya OBJEK_KE_MINGGU selalu dipakai
+    const mingguDistractor = distractorBentuk?.length ? 0 : (putaran.minggu ?? 1)
     return [
       { nama: target, hex: WARNA_HEX[putaran.warna_target], isTarget: true },
-      { nama: namaDistractor, hex: '#C9C7BE', isTarget: false },
+      { nama: namaDistractor, hex: '#C9C7BE', isTarget: false, mingguOverride: mingguDistractor },
     ]
   })()
 

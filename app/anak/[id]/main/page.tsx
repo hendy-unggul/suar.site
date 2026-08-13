@@ -229,6 +229,10 @@ function MainGameContent() {
 
   const gameKey2 = `${gameConfig.gameKey}-${currentWeek}`
   const gameKey2 = `${gameConfig.gameKey}-${currentWeek}`
+  if (currentWeek === null) return <div style={{backgroundColor: colors.background}} className="min-h-screen flex items-center justify-center"><div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" /></div>
+
+  if (currentWeek === null) return <div style={{backgroundColor: colors.background}} className="min-h-screen flex items-center justify-center"><div className="w-16 h-16 rounded-full border-4 border-current opacity-20 animate-spin" /></div>
+
   const commonProps = {
     key: `${gameInstanceKey}-${gameKey2}`,
     childId: child.id,
