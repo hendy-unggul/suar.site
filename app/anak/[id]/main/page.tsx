@@ -106,6 +106,7 @@ function MainGameContent() {
       .order('played_at', { ascending: false })
       .limit(1)
       .then(({ data }) => {
+        console.log('WEEK QUERY RESULT:', data, data?.[0]?.week_number)
         const w = data?.[0]?.week_number ?? 1
         setCurrentWeek(w)
       })
