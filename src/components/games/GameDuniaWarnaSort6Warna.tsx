@@ -10,6 +10,7 @@ type Props = {
   colors: ColorPalette
   gameKey?: string
   atributUcapan?: Record<string, string>
+  mechanicLevelKey?: string
   atributLabel?: string
   onSessionComplete?: (result: {
     correctItems: number
@@ -134,7 +135,7 @@ function deteksiSessionDay(): 'senin' | 'rabu' | 'jumat' | 'weekend' {
   return 'jumat'
 }
 
-export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, atributLabel = 'warna', onSessionComplete }: Props) {
+export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, gameKey = 'dunia_warna', atributUcapan, atributLabel = 'warna', mechanicLevelKey = 'sort_6_warna', onSessionComplete }: Props) {
   const [variant, setVariant] = useState<ContentVariant | null>(null)
   const [putaran, setPutaran] = useState<Putaran | null>(null)
   const [putaranTersedia, setPutaranTersedia] = useState<Putaran[]>([])
@@ -175,7 +176,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, g
 
       const { data: mechanicData, error: mechanicErr } = await supabase
         .from('game_mechanic_levels').select('id, config')
-        .eq('game_key', gameKey).eq('level_key', 'sort_6_warna').single()
+        .eq('game_key', gameKey).eq('level_key', mechanicLevelKey).single()
       if (mechanicErr || !mechanicData) { if (isMounted) setError('Gagal memuat konfigurasi tingkat permainan.'); return }
 
       const { data: themesData, error: themesErr } = await supabase
@@ -279,7 +280,7 @@ export default function GameDuniaWarnaSort6Warna({ childId, childName, colors, g
   const simpanRepetisiLog = useCallback(async (repetisiKeSelesai: number, targetValue: string, jumlahSalah: number, diselesaikan: boolean) => {
     const durasiMs = Date.now() - repetisiStartRef.current
     await supabase.from('repetisi_log').insert({
-      child_id: childId, game_key: gameKey, mechanic_level_key: 'sort_6_warna',
+      child_id: childId, game_key: gameKey, mechanic_level_key: mechanicLevelKey,
       repetisi_ke: repetisiKeSelesai, target_value: targetValue,
       jumlah_salah_sebelum_benar: jumlahSalah, durasi_ms: durasiMs, diselesaikan,
     })
