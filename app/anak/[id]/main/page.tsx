@@ -24,25 +24,33 @@ type GameConfig = {
   gameKey: string
   atributUcapan: Record<string, string>
   atributLabel: string
+  sort2Key: string
+  sort6Key: string
 }
 
 function getGameConfig(minggu: number): GameConfig {
   if (minggu <= 4) return {
     gameKey: 'dunia_warna',
     atributLabel: 'warna',
+    sort2Key: 'sort_2_warna',
+    sort6Key: 'sort_6_warna',
     atributUcapan: { merah: 'merah', kuning: 'kuning', biru: 'biru', hijau: 'hijau', oranye: 'oranye', ungu: 'ungu' }
   }
   if (minggu <= 8) return {
     gameKey: 'dunia_bentuk',
     atributLabel: 'bentuk',
+    sort2Key: 'sort_2_bentuk',
+    sort6Key: 'sort_4_bentuk',
     atributUcapan: { lingkaran: 'lingkaran', persegi: 'persegi', segitiga: 'segitiga' }
   }
   if (minggu <= 12) return {
     gameKey: 'dunia_ukuran',
     atributLabel: 'ukuran',
+    sort2Key: 'sort_2_ukuran',
+    sort6Key: 'sort_4_ukuran',
     atributUcapan: { besar: 'besar', kecil: 'kecil', panjang: 'panjang', pendek: 'pendek', tinggi: 'tinggi', rendah: 'rendah' }
   }
-  return { gameKey: 'dunia_warna', atributLabel: 'warna', atributUcapan: {} }
+  return { gameKey: 'dunia_warna', atributLabel: 'warna', sort2Key: 'sort_2_warna', sort6Key: 'sort_6_warna', atributUcapan: {} }
 }
 
 const HARI_KE_MECHANIC_KEY: Record<string, string> = {
@@ -239,6 +247,7 @@ function MainGameContent() {
     gameKey: gameConfig.gameKey,
     atributUcapan: gameConfig.atributUcapan,
     atributLabel: gameConfig.atributLabel,
+    mechanicLevelKey: hari === 'jumat' ? gameConfig.sort2Key : gameConfig.sort6Key,
     onSessionComplete: setSessionResult,
   }
 
