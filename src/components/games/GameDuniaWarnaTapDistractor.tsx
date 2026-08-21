@@ -337,11 +337,15 @@ export default function GameDuniaWarnaTapDistractor({ childId, childName, colors
     const distractorBentuk = (putaran as any).distractor_bentuk as string[] | undefined
 
     if (distractorBentuk?.length) {
-      // Bulan 2+: distractor bentuk lain, berwarna, random dari pool
-      const namaDistractor = distractorBentuk[Math.floor(Math.random() * distractorBentuk.length)]
+      // Bulan 2+: 3 pilihan = 1 target + 2 distractor bentuk berbeda
+      // Lebih sulit dari Senin karena ada 2 pilihan salah
+      const shuffled = [...distractorBentuk].sort(() => Math.random() - 0.5)
+      const distractor1 = shuffled[0]
+      const distractor2 = shuffled[1] ?? shuffled[0]
       return [
         { nama: namaTarget, hex: WARNA_HEX[putaran.warna_target], isTarget: true },
-        { nama: namaDistractor, hex: '#C9C7BE', isTarget: false },
+        { nama: distractor1, hex: '#C9C7BE', isTarget: false },
+        { nama: distractor2, hex: '#C9C7BE', isTarget: false },
       ]
     }
 
