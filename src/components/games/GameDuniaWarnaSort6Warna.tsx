@@ -33,6 +33,9 @@ type ContentVariant = {
 }
 
 const WARNA_HEX: Record<string, string> = {
+  bukan_lingkaran: '#8B8D98',
+  bukan_persegi: '#8B8D98',
+  bukan_segitiga: '#8B8D98',
   merah: '#E8001C',
   kuning: '#FFD700',
   hijau: '#00B300',
@@ -46,6 +49,10 @@ const WARNA_HEX: Record<string, string> = {
 }
 
 const WARNA_UCAPAN: Record<string, string> = {
+  // Bulan 2: kategori negatif
+  bukan_lingkaran: 'bukan lingkaran',
+  bukan_persegi: 'bukan persegi',
+  bukan_segitiga: 'bukan segitiga',
   merah: 'merah',
   kuning: 'kuning',
   hijau: 'hijau',
